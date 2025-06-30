@@ -195,7 +195,7 @@ const server = http.createServer((req, res) => {
             </div>
             <div class="contact-form">
               <h3>Send a Message</h3>
-              <form>
+              <form action='/submit' method='POST'>
                 <div class="form-group">
                   <label for="name">Name:</label>
                   <input type="text" id="name" name="name" required>
