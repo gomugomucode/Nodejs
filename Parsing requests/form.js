@@ -1,12 +1,10 @@
-const http = require('node:http');
+
 const fs = require('fs');
 const url = require('node:url');
 const querystring = require('querystring');
 
-const hostname = '127.0.0.1';
-const port = 3000;
 
-const server = http.createServer((req, res) => {
+const requesthandler = (req, res) => {
   const parsedUrl = url.parse(req.url, true);
   const path = parsedUrl.pathname;
   console.log(path)
@@ -76,20 +74,18 @@ const server = http.createServer((req, res) => {
         const parsedData = querystring.parse(fullbody);
         console.log(parsedData)
 
-        // another way of parsing the requests
+        // // another way of parsing the requests
         
 
-        const params = new URLSearchParams(parsedData)
+        // const params = new URLSearchParams(parsedData)
         // const bodyObj={}
         // for(const[key,val] of params.entries()){
         //   bodyObj[key]=val
         // }
 
-        // another way of doing the above urlsearch parms is below
-        const bodyObj = Object.fromEntries(parsedData)
-
-
-        console.log(bodyObj)
+        // // another way of doing the above urlsearch parms is below
+        // // const bodyObj = Object.fromEntries(parsedData);
+        // console.log(bodyObj)
 
 
         
@@ -188,8 +184,6 @@ ${'='.repeat(50)}
     `);
     res.end();
   }
-});
+};
 
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
+module.exports = requesthandler
