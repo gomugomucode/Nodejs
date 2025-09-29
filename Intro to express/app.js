@@ -14,7 +14,17 @@ const app = express();
 // })
 
 // second way to use
+function myMiddleware(req,res,next){
+  console.log("My middleware is served",req.url,req.method);
+  next();
 
+}
+
+app.use(myMiddleware)
+
+app.get('/', (req, res) => {
+  res.send('Hello from Express! Middleware executed successfully.');
+});
 
 const port = 3001
 
