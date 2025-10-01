@@ -60,6 +60,12 @@ app.get('/', (req, res) => {
 app.get('/about', (req, res) => {
   res.send('Hello from Express! About page.');
 });
+app.get('/contact', (req, res) => {
+  res.send('Hello from Express! contact page.');
+});
+app.get('/service', (req, res) => {
+  res.send('Hello from Express! service page.');
+});
 
 // A route that uses a specific middleware (a third way to use middleware)
 app.get('/special', myMiddleware1, (req, res) => {
