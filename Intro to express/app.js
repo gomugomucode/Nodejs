@@ -1,81 +1,118 @@
-
+// Import Express framework
 const express = require('express');
-const http = require('http');
-
 const app = express();
 
-// ?middleware
 
-// first way to use //////9diretly make middleware and use by app.use(function like req, res, next)
+// ------------------------------
+// MIDDLEWARE DEFINITIONS
+// ------------------------------
 
-// app.use((req,res,next)=>{
-//   console.log("First came first serverd", req.url,req.method);
-//   next()     // move ti next middleware or route 
-// })
-
-
-// second way to use
-// A new simple middleware is defined to replace the missing 'myMiddleware'
+// 1. Global Logger Middleware
+// Logs every incoming request method & URL
 function simpleLogger(req, res, next) {
-  console.log("-> Global Logger (simpleLogger) served");
-  console.log(`-> Method: ${req.method}`);
-  console.log(`-> URL: ${req.url}`);
-  // Pass control to the next middleware/route handler
+  console.log("-> Global Logger served");
+  console.log(`-> Method: ${req.method}, URL: ${req.url}`);
+  next(); // Pass control to next middleware or route
+}
+
+// 2. Timestamp Middleware
+// Adds the current request time into the request object
+function addTimestamp(req, res, next) {
+  req.requestTime = new Date().toISOString();
+  console.log("-> Timestamp middleware executed");
   next();
 }
 
-function myMiddleware1(req, res, next) {
-  console.log("-> myMiddleware1 served: Adds current timestamp to request");
-  req.requestTime = new Date().toISOString(); // Example: adding data to req object
-  // Pass control to the next middleware/route handler
-  next(); 
+// 3. Terminating Middleware
+// This one does NOT call next(), so it stops the request cycle early
+function terminateEarly(req, res, next) {
+  console.log("-> Terminating middleware triggered");
+  res.status(503).send("Request stopped early - Service Unavailable");
+  // Notice: no next() here
 }
 
-// myMiddleware2 is repurposed to demonstrate a middleware that TERMINATES the request
-function myMiddleware2(req, res, next) {
-  // IMPORTANT: If this middleware executes, it will send a response and STOP the cycle.
-  // It will prevent myMiddleware1 and the route handlers from running.
-  console.log("-> myMiddleware2 served: This middleware always terminates the request early.");
-  res.status(503).send("Second come, first served - Service Unavailable (Terminated by myMiddleware2)");
-  // NO next() call here because the response is sent.
+// 4. Error Handling Middleware (Special Type)
+// Always has 4 parameters: (err, req, res, next)
+// Used to catch errors thrown in other middlewares/routes
+function errorHandler(err, req, res, next) {
+  console.error("-> Error Handler caught:", err.message);
+  res.status(500).send("Something broke! " + err.message);
 }
 
 
-// --- Middleware Application ---
+// ------------------------------
+// APPLY GLOBAL MIDDLEWARE
+// ------------------------------
 
-// 1. Corrected 'app.use(myMiddleware)' to use the defined 'simpleLogger'
-app.use(simpleLogger); 
-
-// 2. This middleware will run on every request
-app.use(myMiddleware1); 
+// These run on every single request (in order)
+app.use(simpleLogger);
+app.use(addTimestamp);
 
 
-// --- Route Handlers ---
+// ------------------------------
+// ROUTES
+// ------------------------------
 
+// Basic route (uses global middlewares)
 app.get('/', (req, res) => {
-  // req.requestTime is available here because of myMiddleware1
-  res.send(`Hello from Express! Middleware executed successfully. Request Time: ${req.requestTime}`);
+  res.send(`Welcome! Request Time: ${req.requestTime}`);
 });
 
-app.get('/about', (req, res) => {
-  res.send('Hello from Express! About page.');
-});
-app.get('/contact', (req, res) => {
-  res.send('Hello from Express! contact page.');
-});
-app.get('/service', (req, res) => {
-  res.send('Hello from Express! service page.');
-});
+// Another simple route
+app.get('/about', (req, res) => res.send("About Page"));
 
-// A route that uses a specific middleware (a third way to use middleware)
-app.get('/special', myMiddleware1, (req, res) => {
-    res.send(`Special Route. Timestamp added: ${req.requestTime}`);
-});
+// Another one
+app.get('/contact', (req, res) => res.send("Contact Page"));
+
+// Another one
+app.get('/service', (req, res) => res.send("Service Page"));
 
 
+// Route-specific middleware usage
+// Only for this route, 'addTimestamp' runs again before final response
+app.get('/special', addTimestamp, (req, res) => {
+  res.send(`Special Route. Timestamp: ${req.requestTime}`);
+});
+
+
+// Path-specific middleware
+// Only triggers when the path matches '/submit-details'
+app.post('/submit-details', 
+  (req, res, next) => {
+    console.log("-> Middleware triggered only on POST /submit-details");
+    next(); // pass control to next handler
+  }, 
+  (req, res) => {
+    res.send("Details submitted successfully!");
+  }
+);
+
+
+// Route with terminating middleware
+// Any request to /terminate will be blocked early
+app.use('/terminate', terminateEarly);
+
+
+// Example route that throws an error (to test errorHandler)
+app.get('/cause-error', (req, res, next) => {
+  // Simulate an error
+  const err = new Error("Manual test error!");
+  next(err); // Passes error to errorHandler
+});
+
+
+// ------------------------------
+// APPLY ERROR HANDLER
+// ------------------------------
+
+// Must come LAST in the chain
+app.use(errorHandler);
+
+
+// ------------------------------
+// START SERVER
+// ------------------------------
 const port = 3001;
-
 app.listen(port, () => {
-  console.log(`Server starting at http://localhost:${port}/`);
+  console.log(`Server running at http://localhost:${port}`);
 });
-
